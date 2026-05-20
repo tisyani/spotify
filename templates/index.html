@@ -2,30 +2,31 @@
 <html>
 
 <head>
+
     <title>Spotify Terminal</title>
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
 </head>
 
 <body>
 
-    <div class="terminal">
+    <h1>Spotify Music Journal</h1>
 
-        <div id="output">
+    <!-- HISTORY WIDGETS -->
+    <div id="history-container"></div>
 
-            <p>SPOTIFY MUSIC JOURNAL v1.0</p>
-            <p>Type a command:</p>
-            <p>
-                top tracks<br>
-                top artists<br>
-                recent tracks
-            </p>
+    <!-- TERMINAL -->
+    <div id="terminal">
 
-        </div>
+        <div id="output"></div>
 
-        <div class="input-line">
+        <div id="input-line">
 
-            <span>> </span>
+            <span>spotify@journal:~$</span>
 
             <input
                 type="text"
@@ -37,44 +38,132 @@
 
     </div>
 
-<script>
+    <script>
 
-const input = document.getElementById("commandInput");
-const output = document.getElementById("output");
+        const input =
+            document.getElementById("commandInput");
 
-input.addEventListener("keydown", async function(event) {
+        const output =
+            document.getElementById("output");
 
-    if (event.key === "Enter") {
+        // =====================
+        // SEND COMMAND
+        // =====================
 
-        const command = input.value;
+        input.addEventListener("keydown", async function(e) {
 
-        output.innerHTML += `<p>> ${command}</p>`;
+            if (e.key === "Enter") {
 
-        input.value = "";
+                const command = input.value;
 
-        const response = await fetch("/command", {
+                output.innerHTML += `
+                    <p>
+                        spotify@journal:~$ ${command}
+                    </p>
+                `;
 
-            method: "POST",
+                const response = await fetch("/command", {
 
-            headers: {
-                "Content-Type": "application/json"
-            },
+                    method: "POST",
 
-            body: JSON.stringify({
-                command: command
-            })
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
 
+                    body: JSON.stringify({
+                        command: command
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.result === "__CLEAR__") {
+
+                    output.innerHTML = "";
+
+                } else {
+
+                    output.innerHTML += `
+                        <pre>${data.result}</pre>
+                    `;
+                }
+
+                input.value = "";
+
+                output.scrollTop =
+                    output.scrollHeight;
+            }
         });
 
-        const data = await response.json();
+        // =====================
+        // LOAD HISTORY WIDGETS
+        // =====================
 
-        output.innerHTML += `<p>${data.result}</p>`;
+        async function loadWidgets() {
 
-        window.scrollTo(0, document.body.scrollHeight);
-    }
-});
+            const response =
+                await fetch("/history-data");
 
-</script>
+            const files =
+                await response.json();
+
+            const container =
+                document.getElementById(
+                    "history-container"
+                );
+
+            container.innerHTML = "";
+
+            files.forEach(file => {
+
+                const widget =
+                    document.createElement("div");
+
+                widget.className =
+                    "history-widget";
+
+                widget.innerText =
+                    file.replace(".json", "");
+
+                widget.onclick = () => {
+
+                    loadDay(file);
+
+                };
+
+                container.appendChild(widget);
+            });
+        }
+
+        // =====================
+        // LOAD SPECIFIC DAY
+        // =====================
+
+        async function loadDay(file) {
+
+            const response =
+                await fetch(`/day/${file}`);
+
+            const data =
+                await response.json();
+
+            output.innerHTML = "";
+
+            data.forEach((track, index) => {
+
+                output.innerHTML += `
+                    <p>
+                        ${index + 1}.
+                        ${track.song} - ${track.artist}
+                    </p>
+                `;
+            });
+        }
+
+        // AUTO LOAD WIDGETS
+        loadWidgets();
+
+    </script>
 
 </body>
 

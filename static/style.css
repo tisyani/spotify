@@ -1,58 +1,105 @@
 body {
 
-    background-color: #1e1e1e;
+    background-color: #0d0d0d;
 
-    color: #00ff00;
+    color: #00ff88;
 
     font-family: monospace;
 
-    margin: 0;
-
     padding: 20px;
 }
 
-.terminal {
+h1 {
 
-    width: 90%;
+    text-align: center;
 
-    margin: auto;
-
-    border: 2px solid #00ff00;
-
-    padding: 20px;
-
-    min-height: 90vh;
-
-    box-sizing: border-box;
+    margin-bottom: 30px;
 }
 
-.input-line {
+/* =====================
+   HISTORY WIDGETS
+===================== */
+
+#history-container {
 
     display: flex;
 
-    align-items: center;
+    flex-wrap: wrap;
+
+    gap: 15px;
+
+    margin-bottom: 25px;
 }
 
-input {
+.history-widget {
 
-    background: transparent;
+    border: 2px solid #00ff88;
+
+    padding: 20px;
+
+    width: 180px;
+
+    cursor: pointer;
+
+    background-color: #111;
+
+    transition: 0.2s;
+}
+
+.history-widget:hover {
+
+    background-color: #00ff88;
+
+    color: black;
+}
+
+/* =====================
+   TERMINAL
+===================== */
+
+#terminal {
+
+    border: 2px solid #00ff88;
+
+    padding: 15px;
+
+    height: 500px;
+
+    overflow-y: auto;
+
+    background-color: black;
+}
+
+#output {
+
+    margin-bottom: 10px;
+}
+
+#input-line {
+
+    display: flex;
+
+    gap: 10px;
+}
+
+#commandInput {
+
+    background: black;
 
     border: none;
 
-    color: #00ff00;
+    color: #00ff88;
 
     font-family: monospace;
 
-    font-size: 16px;
+    width: 100%;
 
     outline: none;
 
-    width: 100%;
+    font-size: 16px;
 }
 
-p {
+pre {
 
-    margin: 5px 0;
-
-    white-space: pre-line;
+    white-space: pre-wrap;
 }
