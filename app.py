@@ -1,11 +1,27 @@
-from flask import Flask, render_template, request, jsonify, redirect
+from flask import (
+    Flask,
+    render_template,
+    request,
+    jsonify,
+    redirect,
+    session
+)
+
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
+
 import os
 import json
+
 from datetime import datetime
 
 app = Flask(__name__)
+
+# ====================================
+# SECRET KEY
+# ====================================
+
+app.secret_key = "spotify-secret-key"
 
 # ====================================
 # SPOTIFY CONFIG
@@ -13,11 +29,15 @@ app = Flask(__name__)
 
 CLIENT_ID = "5cf8f18cfb4146ec87bedabec2968a41"
 
-CLIENT_SECRET = "dc8b120ce5eb436cba048ab44653a0ae"
+CLIENT_SECRET = "77841ce84f27463ba42d8bc5279f94ad"
 
 REDIRECT_URI = "http://127.0.0.1:5000/callback"
 
 SCOPE = "user-top-read user-read-recently-played"
+
+# ====================================
+# SPOTIFY OAUTH
+# ====================================
 
 sp_oauth = SpotifyOAuth(
 
@@ -29,6 +49,10 @@ sp_oauth = SpotifyOAuth(
 
     scope=SCOPE
 )
+
+# ====================================
+# GLOBAL SPOTIFY OBJECT
+# ====================================
 
 sp = None
 
@@ -49,11 +73,20 @@ def home():
 
     global sp
 
-    if sp is None:
+    token_info = session.get("token_info", None)
+
+    # NOT LOGGED IN
+    if not token_info:
 
         auth_url = sp_oauth.get_authorize_url()
 
         return redirect(auth_url)
+
+    # LOGGED IN
+    sp = spotipy.Spotify(
+
+        auth=token_info["access_token"]
+    )
 
     return render_template("index.html")
 
@@ -68,11 +101,19 @@ def callback():
 
     code = request.args.get("code")
 
-    token_info = sp_oauth.get_access_token(code)
+    token_info = sp_oauth.get_access_token(
 
-    access_token = token_info["access_token"]
+        code,
 
-    sp = spotipy.Spotify(auth=access_token)
+        check_cache=False
+    )
+
+    session["token_info"] = token_info
+
+    sp = spotipy.Spotify(
+
+        auth=token_info["access_token"]
+    )
 
     return redirect("/")
 
@@ -104,9 +145,24 @@ def save_history():
 
     filename = f"data/{today}.json"
 
-    with open(filename, "w", encoding="utf-8") as file:
+    with open(
 
-        json.dump(tracks, file, indent=4)
+        filename,
+
+        "w",
+
+        encoding="utf-8"
+
+    ) as file:
+
+        json.dump(
+
+            tracks,
+
+            file,
+
+            indent=4
+        )
 
 # ====================================
 # TERMINAL COMMANDS
@@ -148,15 +204,26 @@ help
 
     elif cmd == "top tracks":
 
-        results = sp.current_user_top_tracks(limit=10)
+        results = sp.current_user_top_tracks(
+
+            limit=10
+        )
 
         result += "\n=== TOP TRACKS ===\n\n"
 
-        for i, track in enumerate(results["items"], start=1):
+        for i, track in enumerate(
+
+            results["items"],
+
+            start=1
+        ):
 
             result += (
+
                 f"{i}. "
+
                 f"{track['name']} - "
+
                 f"{track['artists'][0]['name']}\n"
             )
 
@@ -166,13 +233,26 @@ help
 
     elif cmd == "top artists":
 
-        results = sp.current_user_top_artists(limit=10)
+        results = sp.current_user_top_artists(
+
+            limit=10
+        )
 
         result += "\n=== TOP ARTISTS ===\n\n"
 
-        for i, artist in enumerate(results["items"], start=1):
+        for i, artist in enumerate(
 
-            result += f"{i}. {artist['name']}\n"
+            results["items"],
+
+            start=1
+        ):
+
+            result += (
+
+                f"{i}. "
+
+                f"{artist['name']}\n"
+            )
 
     # ====================================
     # RECENT TRACKS
@@ -180,22 +260,33 @@ help
 
     elif cmd == "recent tracks":
 
-        results = sp.current_user_recently_played(limit=50)
+        results = sp.current_user_recently_played(
+
+            limit=50
+        )
 
         result += "\n=== RECENT TRACKS ===\n\n"
 
-        for i, item in enumerate(results["items"], start=1):
+        for i, item in enumerate(
+
+            results["items"],
+
+            start=1
+        ):
 
             track = item["track"]
 
             result += (
+
                 f"{i}. "
+
                 f"{track['name']} - "
+
                 f"{track['artists'][0]['name']}\n"
             )
 
     # ====================================
-    # SAVE
+    # SAVE HISTORY
     # ====================================
 
     elif cmd == "save":
@@ -205,7 +296,7 @@ help
         result = "\nHistory saved successfully.\n"
 
     # ====================================
-    # CLEAR
+    # CLEAR TERMINAL
     # ====================================
 
     elif cmd == "clear":
@@ -213,7 +304,7 @@ help
         result = "__CLEAR__"
 
     # ====================================
-    # UNKNOWN
+    # UNKNOWN COMMAND
     # ====================================
 
     else:
@@ -227,7 +318,7 @@ help
     })
 
 # ====================================
-# HISTORY FILES
+# HISTORY WIDGETS
 # ====================================
 
 @app.route("/history-data")
@@ -240,13 +331,21 @@ def history_data():
     return jsonify(files)
 
 # ====================================
-# LOAD DAY
+# LOAD DAY DATA
 # ====================================
 
 @app.route("/day/<filename>")
 def day(filename):
 
-    with open(f"data/{filename}", "r", encoding="utf-8") as file:
+    with open(
+
+        f"data/{filename}",
+
+        "r",
+
+        encoding="utf-8"
+
+    ) as file:
 
         data = json.load(file)
 
